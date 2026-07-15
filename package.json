@@ -4,7 +4,7 @@
   "description": "Reference implementation of the SynOI OID Resolver protocol — content-addressed lookup, revocation status, and supersession chains for SRAID-stack objects.",
   "license": "AGPL-3.0-or-later",
   "homepage": "https://synoi.systems",
-  "repository": "github:foundationx/synoi-oid-resolver",
+  "repository": "github:synoi/synoi-oid-resolver",
   "author": "SynOI Inc. <hello@synoi.systems>",
   "type": "commonjs",
   "main": "dist/server.js",
