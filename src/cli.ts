@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 SynOI Inc.
+
 /**
  * cli.ts — `npx @synoi/oid-resolver` entrypoint.
  *
@@ -18,6 +21,7 @@
 
 import * as path from 'node:path'
 import { createResolverServer } from './server'
+import { printLicenseBanner } from './license'
 
 interface Args {
   port:     number
@@ -134,6 +138,9 @@ async function main(): Promise<void> {
     process.stdout.write(`${pkg.version}\n`)
     process.exit(0)
   }
+
+  // Surface the AGPL / commercial-license posture at startup. Never fatal.
+  await printLicenseBanner({ log: (m) => log('info', { msg: m }) }).catch(() => { /* */ })
 
   const running = await createResolverServer({
     port:    args.port,

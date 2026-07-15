@@ -1,0 +1,25 @@
+@synoi/oid-resolver
+Copyright (c) 2026 SynOI Inc.
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. See the LICENSE file for the full text.
+
+  Commercial licensing
+  --------------------
+  The AGPL requires that if you run a MODIFIED version of this software as a
+  network service, you must offer its complete corresponding source to your
+  users. If that obligation does not fit your product, a SynOI Commercial
+  License removes it. The commercial license is issued as an offline,
+  Ed25519-signed token; this package can verify it locally (see
+  src/license.ts / `checkCommercialLicense`). To obtain one:
+
+      https://synoi.systems/resolver
+
+  Running the UNMODIFIED package, or self-hosting for your own use, does not
+  require a commercial license.
+
+The SynOI OID Resolver PROTOCOL (the wire shapes and endpoint contracts) is an
+open specification. Anyone may implement it. This repository is the reference
+implementation; the copyleft applies to this code, not to the protocol.

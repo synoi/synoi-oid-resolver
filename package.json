@@ -1,8 +1,8 @@
 {
   "name": "@synoi/oid-resolver",
-  "version": "0.1.0",
-  "description": "Reference implementation of the SynOI OID Resolver protocol — content-addressed lookup, revocation status, and supersession chains for SOF Stack objects.",
-  "license": "MIT",
+  "version": "0.2.0",
+  "description": "Reference implementation of the SynOI OID Resolver protocol — content-addressed lookup, revocation status, and supersession chains for SRAID-stack objects.",
+  "license": "AGPL-3.0-or-later",
   "homepage": "https://synoi.systems",
   "repository": "github:foundationx/synoi-oid-resolver",
   "author": "SynOI Inc. <hello@synoi.systems>",
@@ -15,16 +15,19 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "start": "node dist/cli.js",
-    "test": "tsx test/resolve.test.ts && tsx test/announce.test.ts && tsx test/revocations.test.ts && tsx test/federation.test.ts"
+    "test": "tsx test/resolve.test.ts && tsx test/announce.test.ts && tsx test/revocations.test.ts && tsx test/federation.test.ts && tsx test/api-key-auth.test.ts && tsx test/metering.test.ts && tsx test/license.test.ts"
   },
   "dependencies": {
+    "@noble/ed25519": "^2.1.0",
     "better-sqlite3": "^11.10.0",
+    "cbor-x": "^1.5.9",
     "express": "^4.19.2"
   },
   "devDependencies": {

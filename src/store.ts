@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 SynOI Inc.
+
 /**
  * store.ts — SQLite-backed implementation of ResolverStore.
  *
@@ -167,6 +170,14 @@ export class SqliteResolverStore implements ResolverStore {
       first_seen_ms,
       type,
     }
+  }
+
+  /** Did this tenant announce this OID? Powers the metered self-verify carve-out. */
+  announcedByTenant(oid: string, tenant_id: string): boolean {
+    const row = this.db.prepare(`
+      SELECT 1 FROM oid_resolver_announcements WHERE oid = ? AND tenant_id = ? LIMIT 1
+    `).get(oid, tenant_id)
+    return row !== undefined
   }
 
   recordRevocation(input: {

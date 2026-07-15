@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 SynOI Inc.
+
 /**
  * routes/announce.ts — POST /v1/announce
  *

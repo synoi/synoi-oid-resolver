@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 SynOI Inc.
+
 /**
  * types.ts — public types for the OID Resolver protocol.
  *
@@ -11,6 +14,7 @@
  */
 
 import type { Request } from 'express'
+import type { UsageMeter } from './metering'
 
 /** Canonical OID format: `sha256:` + 64 hex chars. */
 export const OID_REGEX = /^sha256:[0-9a-f]{64}$/
@@ -103,6 +107,14 @@ export interface ResolverServerOptions {
   upstreamUrl?: string
   /** Test/embedding hook: pass a pre-built store instead of opening one. */
   store?: ResolverStore
+  /**
+   * Optional per-verification meter. When provided, the resolve endpoints
+   * become metered: they REQUIRE the configured `auth` (so each verification
+   * attributes to a tenant), skip counting self-verifications (OIDs the tenant
+   * announced), and record every other billable lookup. Omit it (the default)
+   * and resolve stays open + uncounted — the neutral self-host path.
+   */
+  meter?: UsageMeter
 }
 
 /**
@@ -119,6 +131,13 @@ export interface ResolverStore {
   }): void
 
   resolve(oid: string): ResolveResult
+
+  /**
+   * Optional: did `tenant_id` announce `oid`? Used by metered resolve to keep
+   * self-verification free. A store that can't answer omits this; the resolve
+   * path then counts every lookup (no self carve-out).
+   */
+  announcedByTenant?(oid: string, tenant_id: string): boolean
 
   recordRevocation(input: {
     revocation_oid:  string

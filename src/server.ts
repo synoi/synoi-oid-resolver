@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 SynOI Inc.
+
 /**
  * server.ts — Express factory for the @synoi/oid-resolver reference impl.
  *
@@ -46,6 +49,17 @@ export type {
 } from './types'
 export { SqliteResolverStore } from './store'
 export { createFederationClient } from './federation'
+export { ApiKeyAuth } from './api-key-auth'
+export type { IssuedKey } from './api-key-auth'
+export {
+  NoopUsageMeter, SqliteUsageMeter, currentPeriodKey,
+} from './metering'
+export type { UsageMeter, UsageSnapshot } from './metering'
+export {
+  checkCommercialLicense, verifyLicenseToken, printLicenseBanner,
+  SYNOI_LICENSE_PUBKEY_HEX,
+} from './license'
+export type { LicenseStatus, LicenseClaims } from './license'
 
 // ── Default auth: bearer-token-from-env ─────────────────────────────────────
 
@@ -105,7 +119,13 @@ export function createResolverApp(opts: ResolverServerOptions = {}): ResolverApp
   const app = express()
   app.use(express.json({ limit: '256kb' }))
   app.use(buildHealthRouter())
-  app.use(buildResolveRouter({ store, federation }))
+  app.use(buildResolveRouter({
+    store,
+    federation,
+    // Metering is opt-in: only when a meter is supplied does resolve require
+    // auth + count billable verifications. Default = open, uncounted.
+    ...(opts.meter !== undefined ? { meter: opts.meter, auth } : {}),
+  }))
   app.use(buildAnnounceRouter({ store, auth }))
   app.use(buildRevocationsRouter({ store }))
 

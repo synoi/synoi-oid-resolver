@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 SynOI Inc.
+
 /**
  * routes/resolve.ts — GET /v1/resolve/:oid + POST /v1/resolve/batch
  *
@@ -15,18 +18,42 @@ import { Router } from 'express'
 import type { Request, Response } from 'express'
 import { OID_REGEX } from '../types'
 import type {
-  BatchResolveResponse, ResolveResult, ResolverStore,
+  BatchResolveResponse, ResolveResult, ResolverStore, ResolverAuth,
 } from '../types'
 import type { FederationClient } from '../federation'
+import type { UsageMeter } from '../metering'
 
 export interface ResolveRouterDeps {
   store:      ResolverStore
   federation: FederationClient | null
+  /**
+   * Optional metering. When both are present, resolve requires auth and
+   * records billable (non-self) verifications per tenant. When absent, resolve
+   * is open + uncounted.
+   */
+  meter?:     UsageMeter
+  auth?:      ResolverAuth
 }
 
 export function buildResolveRouter(deps: ResolveRouterDeps): Router {
   const r = Router()
-  const { store, federation } = deps
+  const { store, federation, meter, auth } = deps
+  const metered = meter !== undefined && auth !== undefined
+
+  /** Authenticate a metered request; returns tenant_id or null (after sending 401). */
+  async function meteredTenant(req: Request, res: Response): Promise<string | null> {
+    const result = await auth!.authenticate(req)
+    if (!result.ok) {
+      res.status(401).json({ error: { message: result.reason, type: 'auth_error' } })
+      return null
+    }
+    return result.tenant_id
+  }
+
+  /** Is this a self-verification (tenant resolving its own announced OID)? */
+  function isSelf(oid: string, tenant_id: string): boolean {
+    return store.announcedByTenant?.(oid, tenant_id) ?? false
+  }
 
   r.get('/v1/resolve/:oid', async (req: Request, res: Response): Promise<void> => {
     const oid = req.params['oid']
@@ -35,6 +62,12 @@ export function buildResolveRouter(deps: ResolveRouterDeps): Router {
         error: { message: 'oid must match sha256:<64 hex chars>', type: 'invalid_request' },
       })
       return
+    }
+
+    let tenant_id: string | null = null
+    if (metered) {
+      tenant_id = await meteredTenant(req, res)
+      if (tenant_id === null) return
     }
 
     try {
@@ -47,6 +80,10 @@ export function buildResolveRouter(deps: ResolveRouterDeps): Router {
       ) {
         const upstream = await federation.resolve(oid)
         if (upstream !== null) result = upstream
+      }
+      // Meter billable (non-self) verifications. Self-verification is free.
+      if (metered && tenant_id !== null && !isSelf(oid, tenant_id)) {
+        meter!.record(tenant_id, 1)
       }
       res.json(result)
     } catch (e) {
@@ -74,7 +111,14 @@ export function buildResolveRouter(deps: ResolveRouterDeps): Router {
       return
     }
 
+    let tenant_id: string | null = null
+    if (metered) {
+      tenant_id = await meteredTenant(req, res)
+      if (tenant_id === null) return
+    }
+
     const results: BatchResolveResponse['results'] = []
+    let billable = 0
     for (const raw of body.oids) {
       if (typeof raw !== 'string' || !OID_REGEX.test(raw)) {
         results.push({ oid: raw, error: 'invalid_oid' })
@@ -92,10 +136,12 @@ export function buildResolveRouter(deps: ResolveRouterDeps): Router {
           if (upstream !== null) r1 = upstream
         }
         results.push(r1)
+        if (metered && tenant_id !== null && !isSelf(raw, tenant_id)) billable++
       } catch {
         results.push({ oid: raw, error: 'lookup_failed' })
       }
     }
+    if (metered && tenant_id !== null && billable > 0) meter!.record(tenant_id, billable)
     const out: BatchResolveResponse = { results, count: results.length }
     res.json(out)
   })
